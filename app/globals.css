@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Every colour pair is chosen to meet WCAG AA contrast in both
+ * light and dark schemes. Tokens are exposed to Tailwind via `@theme inline`
+ * so utilities such as `bg-surface` and `text-muted` stay theme-aware.
+ */
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #eaeef3;
+  --text: #0e1726;
+  --muted: #475569;
+  --border: #d3dae3;
+  --primary: #05663f;
+  --primary-hover: #045232;
+  --on-primary: #ffffff;
+  --accent: #1d4ed8;
+  --ok: #047857;
+  --warn: #b45309;
+  --crit: #b91c1c;
+  --focus: #1d4ed8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0f1a;
+    --surface: #121a29;
+    --surface-2: #1b2536;
+    --text: #e8edf4;
+    --muted: #aebdd0;
+    --border: #2a374b;
+    --primary: #10b981;
+    --primary-hover: #34d399;
+    --on-primary: #04121c;
+    --accent: #93c5fd;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --crit: #f87171;
+    --focus: #93c5fd;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-crit: var(--crit);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+/* Always-visible focus indicator for keyboard users. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Visually hidden but available to assistive technology. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: hidden until focused, then pinned to the top-left. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 50;
+  padding: 0.5rem 0.875rem;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: 0.5rem;
+  transition: top 0.15s ease-in-out;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* Accessible occupancy meter, styled without inline styles (CSP-safe). */
+progress.meter {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 0.6rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+progress.meter::-webkit-progress-bar {
+  background: var(--surface-2);
+}
+
+progress.meter::-webkit-progress-value {
+  background: var(--primary);
+  border-radius: 9999px;
+}
+
+progress.meter::-moz-progress-bar {
+  background: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
