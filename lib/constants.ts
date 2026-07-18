@@ -11,8 +11,8 @@ export const APP_NAME = "Stadium Pulse";
 /** The event this solution targets. */
 export const TOURNAMENT = "FIFA World Cup 2026";
 
-/** Representative host venue used for the simulated operations data. */
-export const VENUE_NAME = "MetLife Stadium, New York/New Jersey";
+/** Generic venue context used in prompts and copy (no hardcoded venue data). */
+export const VENUE_CONTEXT = "a FIFA World Cup 2026 host venue";
 
 /** Default Gemini model; overridable via `GEMINI_MODEL`. */
 export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";

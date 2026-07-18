@@ -2,20 +2,40 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/ops-briefing/route";
 import type { RateLimitResult } from "@/lib/rate-limit";
 
-const { check, streamOpsBriefing } = vi.hoisted(() => ({
-  check: vi.fn(),
-  streamOpsBriefing: vi.fn(),
-}));
+const { check, streamOpsBriefing, generateOperationsSnapshot } = vi.hoisted(
+  () => ({
+    check: vi.fn(),
+    streamOpsBriefing: vi.fn(),
+    generateOperationsSnapshot: vi.fn(),
+  }),
+);
 vi.mock("@/lib/rate-limit", () => ({
   getSharedRateLimiter: () => ({ check }),
 }));
 vi.mock("@/lib/gemini", () => ({ streamOpsBriefing }));
+vi.mock("@/lib/ops-source", () => ({ generateOperationsSnapshot }));
 
 const allowed: RateLimitResult = {
   allowed: true,
   limit: 20,
   remaining: 19,
   retryAfterMs: 0,
+};
+
+const snapshot = {
+  venue: "Test Venue",
+  generatedAt: 0,
+  zones: [{ id: "zone-1", name: "Zone 1", capacity: 1000, occupancy: 500 }],
+  gates: [
+    {
+      id: "gate-1",
+      name: "Gate 1",
+      isOpen: true,
+      throughputPerMin: 100,
+      waitMinutes: 5,
+    },
+  ],
+  incidents: [],
 };
 
 async function* briefing(): AsyncGenerator<string> {
@@ -34,6 +54,7 @@ describe("POST /api/ops-briefing", () => {
   beforeEach(() => {
     check.mockReset().mockReturnValue(allowed);
     streamOpsBriefing.mockReset().mockReturnValue(briefing());
+    generateOperationsSnapshot.mockReset().mockResolvedValue(snapshot);
   });
 
   it("streams a briefing grounded in the current snapshot", async () => {

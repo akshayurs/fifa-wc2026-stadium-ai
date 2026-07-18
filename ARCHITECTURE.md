@@ -43,19 +43,20 @@ Each handler is a thin pipeline over shared helpers: `enforceRateLimit` and
 
 ### 4. Domain & integration — `lib/`
 
-| Module               | Responsibility                                                     |
-| -------------------- | ------------------------------------------------------------------ |
-| `env.ts`             | Zod-validated, cached, server-only environment                     |
-| `constants.ts`       | Non-secret shared constants                                        |
-| `gemini.ts`          | Server-only Gemini client, hardened prompts, mock mode             |
-| `stadium-data.ts`    | Deterministic simulated operations data + metrics                  |
-| `validation.ts`      | Request schemas and a safe parse helper                            |
-| `rate-limit.ts`      | In-memory sliding-window limiter                                   |
-| `security.ts`        | CSP construction and nonce generation                              |
-| `http.ts`            | JSON/error responses and client-IP extraction                      |
-| `stream.ts`          | Generator → streaming HTTP response with clean pre-stream failures |
-| `response-stream.ts` | Client-side fetch + Web Streams decoding                           |
-| `logger.ts`          | Structured, server-only logging sink                               |
+| Module               | Responsibility                                                       |
+| -------------------- | -------------------------------------------------------------------- |
+| `env.ts`             | Zod-validated, cached, server-only environment                       |
+| `constants.ts`       | Non-secret shared constants                                          |
+| `gemini.ts`          | Server-only Gemini client, hardened prompts, mock mode               |
+| `ops-source.ts`      | Server-only: Gemini-generated operations snapshot + fallback         |
+| `stadium-data.ts`    | Domain types, metric derivation, and a procedural fallback generator |
+| `validation.ts`      | Request schemas and a safe parse helper                              |
+| `rate-limit.ts`      | In-memory sliding-window limiter                                     |
+| `security.ts`        | CSP construction and nonce generation                                |
+| `http.ts`            | JSON/error responses and client-IP extraction                        |
+| `stream.ts`          | Generator → streaming HTTP response with clean pre-stream failures   |
+| `response-stream.ts` | Client-side fetch + Web Streams decoding                             |
+| `logger.ts`          | Structured, server-only logging sink                                 |
 
 ## Streaming model
 
@@ -65,10 +66,16 @@ misconfiguration) into a clean JSON `502` rather than a broken stream. On the
 client, `useTextStream` reads the stream via `readTextChunks` and appends tokens
 to a live region.
 
-## Determinism & testability
+## Data generation (no hardcoded dataset)
 
-The simulated data is seeded (mulberry32), so the same seed yields the same
-snapshot — the UI feels live while tests stay reproducible. Gemini has a mock
-mode (`STADIUM_AI_MOCK`) so tests and offline demos never hit the network. The
-result is a suite that enforces 100% coverage with no flakiness and no leaked
-error output.
+The operations snapshot is not a checked-in fixture. In production
+`generateOperationsSnapshot` asks Gemini for a structured JSON snapshot,
+validates it with Zod, and normalizes it. When the model is disabled, missing,
+or errors, it falls back to `synthesizeSnapshot` — a computed, seeded
+(mulberry32) generator with no stored dataset — so the page always renders.
+
+## Testability
+
+The seeded fallback makes tests reproducible, and Gemini has a mock mode
+(`STADIUM_AI_MOCK`) so tests and offline demos never hit the network. The suite
+enforces 100% coverage with no flakiness and no leaked error output.

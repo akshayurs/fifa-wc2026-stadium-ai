@@ -1,13 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
-import { VENUE_NAME } from "@/lib/constants";
+import { describe, expect, it } from "vitest";
+import { VENUE_CONTEXT } from "@/lib/constants";
 import {
   classifyStatus,
   clamp,
   deriveMetrics,
-  getCurrentStadiumSnapshot,
-  getStadiumSnapshot,
   maxBy,
+  severityFromScore,
   summarizeForPrompt,
+  synthesizeSnapshot,
   zoneOccupancyPct,
   type StadiumSnapshot,
 } from "@/lib/stadium-data";
@@ -64,24 +64,26 @@ describe("classifyStatus", () => {
   });
 });
 
-describe("getStadiumSnapshot", () => {
+describe("severityFromScore", () => {
+  it("maps scores to severity bands", () => {
+    expect(severityFromScore(0.95)).toBe("high");
+    expect(severityFromScore(0.7)).toBe("medium");
+    expect(severityFromScore(0.2)).toBe("low");
+  });
+});
+
+describe("synthesizeSnapshot", () => {
   it("is deterministic for a given seed", () => {
-    expect(getStadiumSnapshot(12_345)).toEqual(getStadiumSnapshot(12_345));
+    expect(synthesizeSnapshot(12_345)).toEqual(synthesizeSnapshot(12_345));
   });
 
-  it("seeds a snapshot from the current time", () => {
-    vi.spyOn(Date, "now").mockReturnValue(999);
+  it("computes a well-formed, bounded snapshot with no stored dataset", () => {
+    const snapshot = synthesizeSnapshot(2026);
 
-    expect(getCurrentStadiumSnapshot()).toEqual(getStadiumSnapshot(999));
-  });
-
-  it("produces a well-formed, bounded snapshot", () => {
-    const snapshot = getStadiumSnapshot(2026);
-
-    expect(snapshot.venue).toBe(VENUE_NAME);
+    expect(snapshot.venue).toBe(VENUE_CONTEXT);
     expect(snapshot.generatedAt).toBe(2026);
     expect(snapshot.zones).toHaveLength(5);
-    expect(snapshot.gates).toHaveLength(5);
+    expect(snapshot.gates).toHaveLength(6);
     expect(snapshot.incidents.length).toBeLessThanOrEqual(4);
 
     for (const zone of snapshot.zones) {
@@ -93,15 +95,30 @@ describe("getStadiumSnapshot", () => {
       expect(gate.throughputPerMin).toBeGreaterThanOrEqual(0);
     }
   });
+
+  it("produces incidents referencing generated zones", () => {
+    // Seed chosen to yield at least one incident.
+    const withIncidents = Array.from({ length: 50 }, (_, i) =>
+      synthesizeSnapshot(i + 1),
+    ).find((snapshot) => snapshot.incidents.length > 0);
+
+    expect(withIncidents).toBeDefined();
+    for (const incident of withIncidents?.incidents ?? []) {
+      expect(incident.zoneId).toMatch(/^zone-\d+$/);
+      expect(["low", "medium", "high"]).toContain(incident.severity);
+    }
+  });
 });
 
 describe("deriveMetrics", () => {
   it("aggregates capacity, occupancy, and status", () => {
-    const snapshot = getStadiumSnapshot(2026);
+    const snapshot = synthesizeSnapshot(2026);
     const metrics = deriveMetrics(snapshot);
 
-    expect(metrics.totalCapacity).toBe(86_000);
-    expect(metrics.openGates).toBe(5);
+    expect(metrics.totalCapacity).toBe(
+      snapshot.zones.reduce((sum, zone) => sum + zone.capacity, 0),
+    );
+    expect(metrics.openGates).toBe(snapshot.gates.length);
     expect(metrics.activeIncidents).toBe(snapshot.incidents.length);
     expect(metrics.occupancyPct).toBe(
       Math.round((metrics.totalOccupancy / metrics.totalCapacity) * 100),

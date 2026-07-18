@@ -1,14 +1,15 @@
 import { AssistantPanel } from "@/components/AssistantPanel";
 import { OpsDashboard } from "@/components/OpsDashboard";
-import { APP_NAME, TOURNAMENT, VENUE_NAME } from "@/lib/constants";
-import { deriveMetrics, getCurrentStadiumSnapshot } from "@/lib/stadium-data";
+import { APP_NAME, TOURNAMENT, VENUE_CONTEXT } from "@/lib/constants";
+import { generateOperationsSnapshot } from "@/lib/ops-source";
+import { deriveMetrics } from "@/lib/stadium-data";
 
 // Rendered per request so the operations snapshot reflects "now" and the
 // per-request CSP nonce can be applied during server rendering.
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const snapshot = getCurrentStadiumSnapshot();
+export default async function HomePage() {
+  const snapshot = await generateOperationsSnapshot();
   const metrics = deriveMetrics(snapshot);
 
   return (
@@ -23,7 +24,8 @@ export default function HomePage() {
         <p className="mt-3 max-w-3xl text-muted">
           A GenAI-powered solution that optimizes stadium operations and
           enhances the {TOURNAMENT} experience through intelligent, real-time
-          assistance. Live figures below are simulated for {VENUE_NAME}.
+          assistance. Live figures below are generated in real time for{" "}
+          {VENUE_CONTEXT}.
         </p>
       </section>
 

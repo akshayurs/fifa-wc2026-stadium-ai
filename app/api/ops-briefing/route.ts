@@ -1,11 +1,8 @@
 import { enforceRateLimit, readJsonBody } from "@/lib/api-guard";
 import { streamOpsBriefing } from "@/lib/gemini";
 import { jsonError } from "@/lib/http";
-import {
-  deriveMetrics,
-  getCurrentStadiumSnapshot,
-  summarizeForPrompt,
-} from "@/lib/stadium-data";
+import { generateOperationsSnapshot } from "@/lib/ops-source";
+import { deriveMetrics, summarizeForPrompt } from "@/lib/stadium-data";
 import { streamTextResponse } from "@/lib/stream";
 import { opsBriefingRequestSchema, parseBody } from "@/lib/validation";
 
@@ -32,7 +29,7 @@ export async function POST(request: Request): Promise<Response> {
     return jsonError(400, parsed.message);
   }
 
-  const snapshot = getCurrentStadiumSnapshot();
+  const snapshot = await generateOperationsSnapshot(request.signal);
   const metrics = deriveMetrics(snapshot);
   let summary = summarizeForPrompt(snapshot, metrics);
   if (parsed.data.focusZoneId) {

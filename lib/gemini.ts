@@ -5,7 +5,7 @@ import {
   MAX_OUTPUT_TOKENS,
   MODEL_TEMPERATURE,
   TOURNAMENT,
-  VENUE_NAME,
+  VENUE_CONTEXT,
 } from "@/lib/constants";
 import { getServerEnv } from "@/lib/env";
 
@@ -28,7 +28,7 @@ export interface StreamInput {
 /** System instruction for the fan-facing Assistant, hardened against misuse. */
 export function buildFanSystemPrompt(): string {
   return [
-    `You are the ${APP_NAME} fan assistant for the ${TOURNAMENT} at ${VENUE_NAME}.`,
+    `You are the ${APP_NAME} fan assistant for the ${TOURNAMENT} at ${VENUE_CONTEXT}.`,
     "Help supporters with wayfinding, seating, entry gates, concessions, accessibility services, transit, and match logistics.",
     "Answer concisely and warmly in plain text (no markdown). Prefer short, actionable steps.",
     "If a question falls outside stadium or matchday topics, briefly redirect to what you can help with.",
@@ -40,7 +40,7 @@ export function buildFanSystemPrompt(): string {
 /** System instruction for the operations briefing. */
 export function buildOpsSystemPrompt(): string {
   return [
-    `You are the ${APP_NAME} operations analyst for ${VENUE_NAME} during the ${TOURNAMENT}.`,
+    `You are the ${APP_NAME} operations analyst for ${VENUE_CONTEXT} during the ${TOURNAMENT}.`,
     "You receive a structured, real-time operations summary.",
     "Produce a short briefing (plain text, no markdown) with: one-line situation assessment, then 2-4 concrete, prioritized recommendations to optimize crowd flow and safety.",
     "Base every statement strictly on the provided data. Do not fabricate figures.",

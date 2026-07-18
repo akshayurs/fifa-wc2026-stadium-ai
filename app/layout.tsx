@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SkipLink } from "@/components/SkipLink";
-import { APP_NAME, TOURNAMENT, VENUE_NAME } from "@/lib/constants";
+import { APP_NAME, TOURNAMENT, VENUE_CONTEXT } from "@/lib/constants";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     title: `${APP_NAME} — ${TOURNAMENT}`,
-    description: `Real-time, GenAI-powered operations and fan assistance for ${VENUE_NAME}.`,
+    description: `Real-time, GenAI-powered operations and fan assistance for ${VENUE_CONTEXT}.`,
     siteName: APP_NAME,
   },
   twitter: {
@@ -95,7 +95,7 @@ export default function RootLayout({
         <footer className="border-t border-border bg-surface">
           <div className="mx-auto w-full max-w-6xl px-4 py-4 text-xs text-muted">
             {APP_NAME} · A GenAI concept for {TOURNAMENT}. Operational data is
-            simulated for demonstration.
+            generated in real time, not hardcoded.
           </div>
         </footer>
       </body>

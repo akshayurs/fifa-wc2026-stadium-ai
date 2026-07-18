@@ -29,9 +29,9 @@ available. Stadium Pulse addresses both with a single Gemini-powered surface.
 | **GenAI-powered**               | Google Gemini via the official `@google/genai` SDK, called server-side only          | [`lib/gemini.ts`](lib/gemini.ts)                                                                                      |
 | **Optimize stadium operations** | Ops Command Center + an AI briefing that turns live metrics into prioritized actions | [`components/OpsDashboard.tsx`](components/OpsDashboard.tsx), [`app/api/ops-briefing`](app/api/ops-briefing/route.ts) |
 | **Enhance the fan experience**  | Streaming fan Assistant for wayfinding, gates, concessions, accessibility, transit   | [`components/AssistantPanel.tsx`](components/AssistantPanel.tsx), [`app/api/assistant`](app/api/assistant/route.ts)   |
-| **Real-time**                   | Per-request operations snapshot + token-streamed AI responses                        | [`lib/stadium-data.ts`](lib/stadium-data.ts), [`lib/stream.ts`](lib/stream.ts)                                        |
+| **Real-time**                   | Per-request, Gemini-generated operations snapshot + token-streamed AI responses      | [`lib/ops-source.ts`](lib/ops-source.ts), [`lib/stream.ts`](lib/stream.ts)                                            |
 | **Intelligent assistance**      | Hardened, grounded system prompts for both fan and operator personas                 | [`lib/gemini.ts`](lib/gemini.ts)                                                                                      |
-| **FIFA World Cup 2026**         | Modeled on a real 2026 host venue, tournament-specific content                       | [`lib/constants.ts`](lib/constants.ts)                                                                                |
+| **FIFA World Cup 2026**         | Tournament-specific content and prompts; no hardcoded operational dataset            | [`lib/constants.ts`](lib/constants.ts), [`lib/ops-source.ts`](lib/ops-source.ts)                                      |
 
 ## Features
 
@@ -43,6 +43,8 @@ available. Stadium Pulse addresses both with a single Gemini-powered surface.
   accessibility services, and transit.
 - **Accessible by design** — semantic landmarks, skip link, keyboard support,
   live regions, and WCAG-AA contrast in light and dark themes.
+- **No hardcoded data** — the operations snapshot is generated at runtime by
+  Gemini as structured JSON, with a computed procedural fallback for offline/CI.
 
 ## Tech stack
 
