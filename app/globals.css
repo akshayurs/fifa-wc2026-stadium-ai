@@ -16,9 +16,10 @@
   --primary-hover: #045232;
   --on-primary: #ffffff;
   --accent: #1d4ed8;
-  --ok: #047857;
-  --warn: #b45309;
-  --crit: #b91c1c;
+  /* Status colours clear WCAG AA (≥4.5:1) even on their own 15% tint chips. */
+  --ok: #065f46;
+  --warn: #92400e;
+  --crit: #991b1b;
   --focus: #1d4ed8;
 }
 
@@ -36,7 +37,7 @@
     --accent: #93c5fd;
     --ok: #34d399;
     --warn: #fbbf24;
-    --crit: #f87171;
+    --crit: #fca5a5;
     --focus: #93c5fd;
   }
 }

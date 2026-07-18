@@ -64,4 +64,35 @@ describe("readJsonBody", () => {
       expect(result.response.status).toBe(400);
     }
   });
+
+  it("returns a 413 when the declared content-length is oversized", async () => {
+    const request = new Request("https://x.test", {
+      method: "POST",
+      headers: { "content-length": "1000000" },
+      body: JSON.stringify({ message: "small" }),
+    });
+
+    const result = await readJsonBody(request);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.response.status).toBe(413);
+    }
+  });
+
+  it("returns a 413 when the actual body is oversized", async () => {
+    const request = new Request("https://x.test", {
+      method: "POST",
+      body: JSON.stringify({ message: "x".repeat(20_000) }),
+    });
+    // Simulate a client lying about (or omitting) the declared length.
+    request.headers.delete("content-length");
+
+    const result = await readJsonBody(request);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.response.status).toBe(413);
+    }
+  });
 });

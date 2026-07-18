@@ -30,7 +30,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   return streamTextResponse(
-    streamFanAssistant(parsed.data.message, request.signal),
+    streamFanAssistant({
+      message: parsed.data.message,
+      locale: parsed.data.locale,
+      signal: request.signal,
+    }),
     "assistant",
   );
 }

@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import {
   buildSnapshotPrompt,
   generateOperationsSnapshot,
+  withTimeoutSignal,
 } from "@/lib/ops-source";
 
 vi.mock("@/lib/env", () => ({
@@ -67,6 +68,47 @@ describe("buildSnapshotPrompt", () => {
   });
 });
 
+describe("withTimeoutSignal", () => {
+  it("returns a bare timeout signal when no caller signal is given", () => {
+    const combined = withTimeoutSignal(undefined, 1_000);
+
+    expect(combined.aborted).toBe(false);
+  });
+
+  it("returns an already-aborted caller signal as-is", () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const combined = withTimeoutSignal(controller.signal, 1_000);
+
+    expect(combined.aborted).toBe(true);
+  });
+
+  it("propagates a later caller abort to the combined signal", () => {
+    const controller = new AbortController();
+    const combined = withTimeoutSignal(controller.signal, 1_000);
+
+    expect(combined.aborted).toBe(false);
+    controller.abort(new Error("caller cancelled"));
+
+    expect(combined.aborted).toBe(true);
+  });
+
+  it("propagates the timeout to the combined signal", async () => {
+    vi.useFakeTimers();
+    try {
+      const controller = new AbortController();
+      const combined = withTimeoutSignal(controller.signal, 1_000);
+
+      await vi.advanceTimersByTimeAsync(1_001);
+
+      expect(combined.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("generateOperationsSnapshot", () => {
   it("uses the procedural fallback in mock mode", async () => {
     mockedEnv.mockReturnValue(makeEnv({ STADIUM_AI_MOCK: true }));
@@ -90,7 +132,9 @@ describe("generateOperationsSnapshot", () => {
 
   it("normalizes valid Gemini JSON, clamping occupancy to capacity", async () => {
     mockedEnv.mockReturnValue(makeEnv({}));
-    mockGenerateContent({ text: JSON.stringify(validPayload) });
+    const generateContent = mockGenerateContent({
+      text: JSON.stringify(validPayload),
+    });
 
     const snapshot = await generateOperationsSnapshot();
 
@@ -100,8 +144,48 @@ describe("generateOperationsSnapshot", () => {
       capacity: 1000,
       occupancy: 1000, // clamped down from 5000
     });
-    expect(snapshot.incidents[0]?.zoneId).toBe("zone-a");
+    // Incident references the "Zone A" zone → resolved to its generated id.
+    expect(snapshot.incidents[0]?.zoneId).toBe("zone-1");
+    // The upstream call is always bounded by a timeout signal.
+    expect(generateContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: expect.objectContaining({
+          abortSignal: expect.any(AbortSignal),
+        }),
+      }),
+    );
     expect(logError).not.toHaveBeenCalled();
+  });
+
+  it("combines a caller signal with the timeout budget", async () => {
+    mockedEnv.mockReturnValue(makeEnv({}));
+    mockGenerateContent({ text: JSON.stringify(validPayload) });
+
+    const controller = new AbortController();
+    const snapshot = await generateOperationsSnapshot(controller.signal);
+
+    expect(snapshot.venue).toBe("Test Arena");
+  });
+
+  it("slugs incident zone names that match no generated zone", async () => {
+    mockedEnv.mockReturnValue(makeEnv({}));
+    mockGenerateContent({
+      text: JSON.stringify({
+        ...validPayload,
+        incidents: [
+          {
+            severity: "low",
+            message: "Spill reported.",
+            minutesAgo: 2,
+            zoneName: "North Concourse",
+          },
+        ],
+      }),
+    });
+
+    const snapshot = await generateOperationsSnapshot();
+
+    expect(snapshot.incidents[0]?.zoneId).toBe("north-concourse");
   });
 
   it("falls back and logs when the model returns no text", async () => {

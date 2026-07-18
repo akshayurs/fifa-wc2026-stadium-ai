@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH } from "@/lib/constants";
+import {
+  LOCALE_PATTERN,
+  MAX_MESSAGE_LENGTH,
+  MIN_MESSAGE_LENGTH,
+} from "@/lib/constants";
 
 /**
  * Request schemas for the AI endpoints.
@@ -19,7 +23,7 @@ export const assistantRequestSchema = z
     locale: z
       .string()
       .trim()
-      .regex(/^[a-zA-Z]{2}(-[a-zA-Z]{2,4})?$/, "Invalid locale.")
+      .regex(LOCALE_PATTERN, "Invalid locale.")
       .optional(),
   })
   .strict();

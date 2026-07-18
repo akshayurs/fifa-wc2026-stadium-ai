@@ -59,6 +59,27 @@ describe("RateLimiter", () => {
     expect(limiter.check("client").allowed).toBe(true);
   });
 
+  it("sweeps fully-expired keys once the tracked-key threshold is reached", () => {
+    let now = 0;
+    const limiter = new RateLimiter({
+      max: 5,
+      windowMs: 1_000,
+      now: () => now,
+      sweepThreshold: 2,
+    });
+
+    limiter.check("stale-1");
+    limiter.check("stale-2");
+    limiter.check("active");
+
+    now += 2_000;
+    limiter.check("active"); // still inside the new window when swept below
+    now += 500;
+    limiter.check("trigger"); // size >= threshold → sweep runs here
+
+    expect(limiter.size).toBe(2); // stale keys evicted; active + trigger kept
+  });
+
   it("clears state on reset", () => {
     const limiter = new RateLimiter({ max: 1, windowMs: 1_000, now: () => 0 });
 

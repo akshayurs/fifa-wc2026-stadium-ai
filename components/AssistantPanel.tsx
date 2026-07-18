@@ -2,7 +2,21 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { useTextStream } from "@/components/useTextStream";
-import { MAX_MESSAGE_LENGTH, MIN_MESSAGE_LENGTH } from "@/lib/constants";
+import {
+  LOCALE_PATTERN,
+  MAX_MESSAGE_LENGTH,
+  MIN_MESSAGE_LENGTH,
+} from "@/lib/constants";
+
+/**
+ * Returns the browser locale when it fits the API's accepted shape, so the
+ * assistant can reply in the fan's own language. Extended tags the API does
+ * not accept (e.g. "zh-Hant-TW") are simply omitted.
+ */
+function browserLocale(): string | undefined {
+  const language = navigator.language;
+  return LOCALE_PATTERN.test(language) ? language : undefined;
+}
 
 /** Client chat panel for the Gemini-powered fan assistant. */
 export function AssistantPanel() {
@@ -22,7 +36,8 @@ export function AssistantPanel() {
     if (!canSubmit) {
       return;
     }
-    void run({ message: trimmed });
+    const locale = browserLocale();
+    void run(locale ? { message: trimmed, locale } : { message: trimmed });
   };
 
   return (

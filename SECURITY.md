@@ -25,8 +25,17 @@ vulnerabilities. We aim to acknowledge reports within 72 hours.
 - Every request body is validated against a strict Zod schema
   ([`lib/validation.ts`](lib/validation.ts)): bounded message length, allow-listed
   fields (`.strict()`), and pattern-checked identifiers.
+- Request bodies are **size-capped** before parsing ([`lib/api-guard.ts`](lib/api-guard.ts)),
+  returning `413` on oversized payloads — checked against both the declared
+  `Content-Length` and the actual bytes read.
 - All AI endpoints are **rate-limited** per client IP
   ([`lib/rate-limit.ts`](lib/rate-limit.ts)), returning `429` with `Retry-After`.
+  The client key uses the **rightmost** `x-forwarded-for` entry (appended by the
+  nearest trusted proxy), so clients cannot rotate buckets with forged headers,
+  and fully-expired keys are swept to bound memory under key-rotation abuse.
+- Upstream AI calls that gate page rendering are **time-boxed**
+  ([`lib/ops-source.ts`](lib/ops-source.ts)); on timeout the app degrades to a
+  procedural snapshot instead of hanging.
 - Client-facing errors are **generic**; internal details are logged server-side
   only ([`lib/logger.ts`](lib/logger.ts)).
 

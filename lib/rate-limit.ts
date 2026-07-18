@@ -16,7 +16,14 @@ export interface RateLimiterOptions {
   readonly windowMs: number;
   /** Clock injection point; defaults to `Date.now`. Enables deterministic tests. */
   readonly now?: () => number;
+  /**
+   * Number of tracked keys at which fully-expired entries are swept, bounding
+   * memory even when clients rotate spoofed identities. Defaults to 10 000.
+   */
+  readonly sweepThreshold?: number;
 }
+
+const DEFAULT_SWEEP_THRESHOLD = 10_000;
 
 /**
  * In-memory sliding-window rate limiter.
@@ -30,18 +37,33 @@ export class RateLimiter {
   private readonly max: number;
   private readonly windowMs: number;
   private readonly now: () => number;
+  private readonly sweepThreshold: number;
   private readonly hits = new Map<string, number[]>();
 
   constructor(options: RateLimiterOptions) {
     this.max = options.max;
     this.windowMs = options.windowMs;
     this.now = options.now ?? Date.now;
+    this.sweepThreshold = options.sweepThreshold ?? DEFAULT_SWEEP_THRESHOLD;
+  }
+
+  /** Drops keys whose every recorded hit has left the window. */
+  private sweep(windowStart: number): void {
+    for (const [key, timestamps] of this.hits) {
+      if (!timestamps.some((timestamp) => timestamp > windowStart)) {
+        this.hits.delete(key);
+      }
+    }
   }
 
   /** Records an attempt for `key` and reports whether it is allowed. */
   check(key: string): RateLimitResult {
     const current = this.now();
     const windowStart = current - this.windowMs;
+
+    if (this.hits.size >= this.sweepThreshold) {
+      this.sweep(windowStart);
+    }
     const recent = (this.hits.get(key) ?? []).filter(
       (timestamp) => timestamp > windowStart,
     );
@@ -65,6 +87,11 @@ export class RateLimiter {
       remaining: this.max - recent.length,
       retryAfterMs: 0,
     };
+  }
+
+  /** Number of client keys currently tracked. Useful for observability. */
+  get size(): number {
+    return this.hits.size;
   }
 
   /** Removes all tracked state. Intended for tests. */

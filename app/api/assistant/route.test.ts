@@ -49,9 +49,28 @@ describe("POST /api/assistant", () => {
       "text/plain; charset=utf-8",
     );
     await expect(response.text()).resolves.toBe("Head to Gate A.");
+    expect(streamFanAssistant).toHaveBeenCalledWith({
+      message: "Where is Gate A?",
+      locale: undefined,
+      signal: expect.any(AbortSignal),
+    });
+  });
+
+  it("forwards a validated locale to the assistant", async () => {
+    streamFanAssistant.mockReturnValue(reply());
+
+    const response = await POST(
+      postJson(
+        JSON.stringify({
+          message: "¿Dónde está la puerta A?",
+          locale: "es-MX",
+        }),
+      ),
+    );
+
+    expect(response.status).toBe(200);
     expect(streamFanAssistant).toHaveBeenCalledWith(
-      "Where is Gate A?",
-      expect.any(AbortSignal),
+      expect.objectContaining({ locale: "es-MX" }),
     );
   });
 

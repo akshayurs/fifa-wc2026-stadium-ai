@@ -35,17 +35,17 @@ describe("jsonError", () => {
 });
 
 describe("getClientIp", () => {
-  it("uses the first non-empty x-forwarded-for entry", () => {
+  it("uses the rightmost x-forwarded-for entry (nearest trusted proxy)", () => {
     const request = new Request("https://example.test", {
-      headers: { "x-forwarded-for": "203.0.113.9, 10.0.0.1" },
+      headers: { "x-forwarded-for": "spoofed.example, 203.0.113.9" },
     });
 
     expect(getClientIp(request)).toBe("203.0.113.9");
   });
 
-  it("skips blank forwarded entries before the real client", () => {
+  it("ignores blank forwarded entries", () => {
     const request = new Request("https://example.test", {
-      headers: { "x-forwarded-for": " , 198.51.100.4" },
+      headers: { "x-forwarded-for": "198.51.100.4, , " },
     });
 
     expect(getClientIp(request)).toBe("198.51.100.4");

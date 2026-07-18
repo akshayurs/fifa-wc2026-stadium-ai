@@ -39,16 +39,20 @@ export function jsonError(
 /**
  * Derives a best-effort client identifier for rate limiting from proxy
  * headers, falling back to a shared bucket when none are present.
+ *
+ * The rightmost `x-forwarded-for` entry is used: it is appended by the
+ * nearest trusted proxy, whereas leftmost entries are client-supplied and
+ * trivially forgeable to rotate rate-limit buckets.
  */
 export function getClientIp(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
   const realIp = request.headers.get("x-real-ip") ?? "";
 
-  const candidate =
-    forwardedFor
-      .split(",")
-      .map((part) => part.trim())
-      .find((part) => part.length > 0) ?? realIp.trim();
+  const entries = forwardedFor
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  const candidate = entries.at(-1) ?? realIp.trim();
 
   return candidate.length > 0 ? candidate : "anonymous";
 }

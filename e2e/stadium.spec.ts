@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test.describe("Stadium Pulse", () => {
@@ -31,6 +32,19 @@ test.describe("Stadium Pulse", () => {
 
     await expect(page.getByText(/concourse signage/i)).toBeVisible();
   });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`has no detectable accessibility violations (${colorScheme} mode)`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const results = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+
+      expect(results.violations).toEqual([]);
+    });
+  }
 
   test("exposes a skip link to keyboard users", async ({ page }) => {
     await page.keyboard.press("Tab");

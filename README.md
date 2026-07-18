@@ -5,7 +5,7 @@
 > real-time assistance** — powered by Google Gemini.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/tests-135%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-147%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)

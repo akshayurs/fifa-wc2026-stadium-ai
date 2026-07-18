@@ -21,6 +21,15 @@ export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 export const MIN_MESSAGE_LENGTH = 2;
 export const MAX_MESSAGE_LENGTH = 1000;
 
+/** BCP-47-style locale accepted by the API (e.g. "en", "es-MX", "zh-Hant"). */
+export const LOCALE_PATTERN = /^[a-zA-Z]{2}(-[a-zA-Z]{2,4})?$/;
+
+/** Upper bound on an API request body, in bytes. */
+export const MAX_BODY_BYTES = 16_384;
+
+/** Budget for generating the live operations snapshot before falling back. */
+export const SNAPSHOT_TIMEOUT_MS = 8_000;
+
 /** Default sliding-window rate limit (requests per window, per client). */
 export const DEFAULT_RATE_LIMIT_MAX = 20;
 

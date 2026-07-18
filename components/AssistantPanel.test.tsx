@@ -25,8 +25,16 @@ beforeEach(() => {
   mockedHook.mockReset();
 });
 
+function stubLanguage(value: string): void {
+  Object.defineProperty(window.navigator, "language", {
+    value,
+    configurable: true,
+  });
+}
+
 describe("AssistantPanel", () => {
-  it("submits a trimmed question", async () => {
+  it("submits a trimmed question with the browser locale", async () => {
+    stubLanguage("en-US");
     const run = vi.fn().mockResolvedValue(undefined);
     mockedHook.mockReturnValue(stub({ run }));
 
@@ -37,7 +45,22 @@ describe("AssistantPanel", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Ask" }));
 
-    expect(run).toHaveBeenCalledWith({ message: "Where is Gate C?" });
+    expect(run).toHaveBeenCalledWith({
+      message: "Where is Gate C?",
+      locale: "en-US",
+    });
+  });
+
+  it("omits a browser locale the API would reject", async () => {
+    stubLanguage("zh-Hant-TW");
+    const run = vi.fn().mockResolvedValue(undefined);
+    mockedHook.mockReturnValue(stub({ run }));
+
+    render(<AssistantPanel />);
+    await userEvent.type(screen.getByLabelText(/your question/i), "Hello?");
+    await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+    expect(run).toHaveBeenCalledWith({ message: "Hello?" });
   });
 
   it("does not submit an empty question", () => {
