@@ -208,6 +208,23 @@ describe("generateOperationsSnapshot", () => {
     expect(logError).toHaveBeenCalledWith("ops-snapshot", expect.any(Error));
   });
 
+  it("falls back and warns (not errors) when generation is aborted", async () => {
+    mockedEnv.mockReturnValue(makeEnv({}));
+    const generateContent = vi
+      .fn()
+      .mockRejectedValue(new DOMException("Aborted", "AbortError"));
+    MockedGoogleGenAI.mockImplementation(
+      () => ({ models: { generateContent } }) as unknown as GoogleGenAI,
+    );
+
+    const controller = new AbortController();
+    controller.abort();
+    const snapshot = await generateOperationsSnapshot(controller.signal);
+
+    expect(snapshot.zones).toHaveLength(5);
+    expect(logError).not.toHaveBeenCalled();
+  });
+
   it("falls back and logs when the request rejects", async () => {
     mockedEnv.mockReturnValue(makeEnv({}));
     const generateContent = vi.fn().mockRejectedValue(new Error("network"));

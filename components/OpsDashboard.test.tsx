@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { axe } from "jest-axe";
 import { describe, expect, it } from "vitest";
 import { OpsDashboard } from "@/components/OpsDashboard";
-import { deriveMetrics, synthesizeSnapshot } from "@/lib/stadium-data";
+import { deriveMetrics } from "@/lib/stadium-data";
+import { synthesizeSnapshot } from "@/lib/synthetic-snapshot";
 
 const snapshot = synthesizeSnapshot(2026);
 const metrics = deriveMetrics(snapshot);

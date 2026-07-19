@@ -43,20 +43,21 @@ Each handler is a thin pipeline over shared helpers: `enforceRateLimit` and
 
 ### 4. Domain & integration — `lib/`
 
-| Module               | Responsibility                                                       |
-| -------------------- | -------------------------------------------------------------------- |
-| `env.ts`             | Zod-validated, cached, server-only environment                       |
-| `constants.ts`       | Non-secret shared constants                                          |
-| `gemini.ts`          | Server-only Gemini client, hardened prompts, mock mode               |
-| `ops-source.ts`      | Server-only: Gemini-generated operations snapshot + fallback         |
-| `stadium-data.ts`    | Domain types, metric derivation, and a procedural fallback generator |
-| `validation.ts`      | Request schemas and a safe parse helper                              |
-| `rate-limit.ts`      | In-memory sliding-window limiter                                     |
-| `security.ts`        | CSP construction and nonce generation                                |
-| `http.ts`            | JSON/error responses and client-IP extraction                        |
-| `stream.ts`          | Generator → streaming HTTP response with clean pre-stream failures   |
-| `response-stream.ts` | Client-side fetch + Web Streams decoding                             |
-| `logger.ts`          | Structured, server-only logging sink                                 |
+| Module                  | Responsibility                                                     |
+| ----------------------- | ------------------------------------------------------------------ |
+| `env.ts`                | Zod-validated, cached, server-only environment                     |
+| `constants.ts`          | Non-secret shared constants                                        |
+| `gemini.ts`             | Server-only Gemini client, hardened prompts, mock mode             |
+| `ops-source.ts`         | Server-only: Gemini-generated operations snapshot + fallback       |
+| `stadium-data.ts`       | Domain types and pure metric derivation                            |
+| `synthetic-snapshot.ts` | Seeded procedural snapshot generator (offline/CI fallback)         |
+| `validation.ts`         | Request schemas and a safe parse helper                            |
+| `rate-limit.ts`         | In-memory sliding-window limiter                                   |
+| `security.ts`           | CSP construction and nonce generation                              |
+| `http.ts`               | JSON/error responses and client-IP extraction                      |
+| `stream.ts`             | Generator → streaming HTTP response with clean pre-stream failures |
+| `response-stream.ts`    | Client-side fetch + Web Streams decoding                           |
+| `logger.ts`             | Structured, server-only logging sink                               |
 
 ## Streaming model
 

@@ -2,17 +2,15 @@ import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import {
+  SNAPSHOT_LIMITS,
   SNAPSHOT_TIMEOUT_MS,
   TOURNAMENT,
   VENUE_CONTEXT,
 } from "@/lib/constants";
 import { getServerEnv } from "@/lib/env";
-import { logError } from "@/lib/logger";
-import {
-  clamp,
-  synthesizeSnapshot,
-  type StadiumSnapshot,
-} from "@/lib/stadium-data";
+import { logError, logWarning } from "@/lib/logger";
+import { clamp, entityId, type StadiumSnapshot } from "@/lib/stadium-data";
+import { synthesizeSnapshot } from "@/lib/synthetic-snapshot";
 
 /**
  * Server-only source of the live operations snapshot.
@@ -24,38 +22,50 @@ import {
  */
 
 const aiSnapshotSchema = z.object({
-  venue: z.string().min(1).max(120),
+  venue: z.string().min(1).max(SNAPSHOT_LIMITS.venueLength),
   zones: z
     .array(
       z.object({
-        name: z.string().min(1).max(60),
-        capacity: z.number().int().positive().max(200000),
-        occupancy: z.number().int().nonnegative().max(200000),
+        name: z.string().min(1).max(SNAPSHOT_LIMITS.nameLength),
+        capacity: z.number().int().positive().max(SNAPSHOT_LIMITS.capacity),
+        occupancy: z.number().int().nonnegative().max(SNAPSHOT_LIMITS.capacity),
       }),
     )
     .min(1)
-    .max(12),
+    .max(SNAPSHOT_LIMITS.maxZones),
   gates: z
     .array(
       z.object({
-        name: z.string().min(1).max(60),
+        name: z.string().min(1).max(SNAPSHOT_LIMITS.nameLength),
         isOpen: z.boolean(),
-        throughputPerMin: z.number().int().nonnegative().max(2000),
-        waitMinutes: z.number().int().nonnegative().max(240),
+        throughputPerMin: z
+          .number()
+          .int()
+          .nonnegative()
+          .max(SNAPSHOT_LIMITS.throughputPerMin),
+        waitMinutes: z
+          .number()
+          .int()
+          .nonnegative()
+          .max(SNAPSHOT_LIMITS.waitMinutes),
       }),
     )
     .min(1)
-    .max(20),
+    .max(SNAPSHOT_LIMITS.maxGates),
   incidents: z
     .array(
       z.object({
         severity: z.enum(["low", "medium", "high"]),
-        message: z.string().min(1).max(240),
-        minutesAgo: z.number().int().nonnegative().max(600),
-        zoneName: z.string().min(1).max(60),
+        message: z.string().min(1).max(SNAPSHOT_LIMITS.messageLength),
+        minutesAgo: z
+          .number()
+          .int()
+          .nonnegative()
+          .max(SNAPSHOT_LIMITS.incidentAgeMinutes),
+        zoneName: z.string().min(1).max(SNAPSHOT_LIMITS.nameLength),
       }),
     )
-    .max(20),
+    .max(SNAPSHOT_LIMITS.maxIncidents),
 });
 
 type AiSnapshot = z.infer<typeof aiSnapshotSchema>;
@@ -76,27 +86,27 @@ function normalizeSnapshot(
   // zone ids so references stay internally consistent. Names the model made
   // up without a matching zone degrade to a slug rather than a broken id.
   const zoneIdByName = new Map(
-    ai.zones.map((zone, index) => [zone.name, `zone-${index + 1}`]),
+    ai.zones.map((zone, index) => [zone.name, entityId("zone", index)]),
   );
 
   return {
     venue: ai.venue,
     generatedAt,
     zones: ai.zones.map((zone, index) => ({
-      id: `zone-${index + 1}`,
+      id: entityId("zone", index),
       name: zone.name,
       capacity: zone.capacity,
       occupancy: clamp(zone.occupancy, 0, zone.capacity),
     })),
     gates: ai.gates.map((gate, index) => ({
-      id: `gate-${index + 1}`,
+      id: entityId("gate", index),
       name: gate.name,
       isOpen: gate.isOpen,
       throughputPerMin: gate.throughputPerMin,
       waitMinutes: gate.waitMinutes,
     })),
     incidents: ai.incidents.map((incident, index) => ({
-      id: `incident-${index + 1}`,
+      id: entityId("incident", index),
       zoneId: zoneIdByName.get(incident.zoneName) ?? slug(incident.zoneName),
       severity: incident.severity,
       message: incident.message,
@@ -174,7 +184,13 @@ export async function generateOperationsSnapshot(
     const parsed = aiSnapshotSchema.parse(JSON.parse(response.text ?? ""));
     return normalizeSnapshot(parsed, generatedAt);
   } catch (error) {
-    logError("ops-snapshot", error);
+    // A timeout or caller cancellation is expected degradation, not a fault;
+    // log it as a warning so genuine provider errors stay distinguishable.
+    if (abortSignal.aborted) {
+      logWarning("ops-snapshot", "snapshot generation aborted");
+    } else {
+      logError("ops-snapshot", error);
+    }
     return synthesizeSnapshot(generatedAt);
   }
 }

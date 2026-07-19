@@ -41,3 +41,32 @@ export const MAX_OUTPUT_TOKENS = 800;
 
 /** Sampling temperature for grounded, consistent operational answers. */
 export const MODEL_TEMPERATURE = 0.4;
+
+/** Occupancy percentage at/above which operations escalate. */
+export const CRITICAL_OCCUPANCY_PCT = 90;
+export const ELEVATED_OCCUPANCY_PCT = 78;
+
+/** Active-incident count at/above which operations escalate. */
+export const CRITICAL_INCIDENT_COUNT = 3;
+export const ELEVATED_INCIDENT_COUNT = 1;
+
+/** Score bands (0–1) mapping an incident to a severity level. */
+export const HIGH_SEVERITY_SCORE = 0.85;
+export const MEDIUM_SEVERITY_SCORE = 0.6;
+
+/**
+ * Upper bounds accepted from AI-generated snapshot data. Defensive limits that
+ * keep a malformed or adversarial model response from producing absurd values.
+ */
+export const SNAPSHOT_LIMITS = {
+  venueLength: 120,
+  nameLength: 60,
+  maxZones: 12,
+  maxGates: 20,
+  maxIncidents: 20,
+  capacity: 200_000,
+  throughputPerMin: 2_000,
+  waitMinutes: 240,
+  incidentAgeMinutes: 600,
+  messageLength: 240,
+} as const;

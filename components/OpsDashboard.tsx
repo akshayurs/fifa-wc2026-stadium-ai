@@ -1,3 +1,4 @@
+import { GateThroughput } from "@/components/GateThroughput";
 import { IncidentFeed } from "@/components/IncidentFeed";
 import { MetricCard } from "@/components/MetricCard";
 import { OpsBriefingPanel } from "@/components/OpsBriefingPanel";
@@ -58,19 +59,7 @@ export function OpsDashboard({
           <h3 className="mb-3 text-lg font-semibold text-text">
             Gate throughput
           </h3>
-          <ul className="space-y-2">
-            {snapshot.gates.map((gate) => (
-              <li
-                key={gate.id}
-                className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-              >
-                <span className="font-medium text-text">{gate.name}</span>
-                <span className="text-muted">
-                  {gate.waitMinutes} min wait · {gate.throughputPerMin}/min
-                </span>
-              </li>
-            ))}
-          </ul>
+          <GateThroughput gates={snapshot.gates} />
         </div>
       </div>
 

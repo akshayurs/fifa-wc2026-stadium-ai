@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { VENUE_CONTEXT } from "@/lib/constants";
 import {
   classifyStatus,
   clamp,
   deriveMetrics,
+  entityId,
   maxBy,
   severityFromScore,
   summarizeForPrompt,
-  synthesizeSnapshot,
   zoneOccupancyPct,
   type StadiumSnapshot,
 } from "@/lib/stadium-data";
+import { synthesizeSnapshot } from "@/lib/synthetic-snapshot";
 
 describe("clamp", () => {
   it("returns the value within range", () => {
@@ -39,6 +39,12 @@ describe("zoneOccupancyPct", () => {
     expect(
       zoneOccupancyPct({ id: "z", name: "Z", capacity: 200, occupancy: 50 }),
     ).toBe(25);
+  });
+
+  it("returns 0 for a zero-capacity zone instead of NaN", () => {
+    expect(
+      zoneOccupancyPct({ id: "z", name: "Z", capacity: 0, occupancy: 0 }),
+    ).toBe(0);
   });
 });
 
@@ -72,41 +78,10 @@ describe("severityFromScore", () => {
   });
 });
 
-describe("synthesizeSnapshot", () => {
-  it("is deterministic for a given seed", () => {
-    expect(synthesizeSnapshot(12_345)).toEqual(synthesizeSnapshot(12_345));
-  });
-
-  it("computes a well-formed, bounded snapshot with no stored dataset", () => {
-    const snapshot = synthesizeSnapshot(2026);
-
-    expect(snapshot.venue).toBe(VENUE_CONTEXT);
-    expect(snapshot.generatedAt).toBe(2026);
-    expect(snapshot.zones).toHaveLength(5);
-    expect(snapshot.gates).toHaveLength(6);
-    expect(snapshot.incidents.length).toBeLessThanOrEqual(4);
-
-    for (const zone of snapshot.zones) {
-      expect(zone.occupancy).toBeGreaterThanOrEqual(0);
-      expect(zone.occupancy).toBeLessThanOrEqual(zone.capacity);
-    }
-    for (const gate of snapshot.gates) {
-      expect(gate.waitMinutes).toBeGreaterThanOrEqual(0);
-      expect(gate.throughputPerMin).toBeGreaterThanOrEqual(0);
-    }
-  });
-
-  it("produces incidents referencing generated zones", () => {
-    // Seed chosen to yield at least one incident.
-    const withIncidents = Array.from({ length: 50 }, (_, i) =>
-      synthesizeSnapshot(i + 1),
-    ).find((snapshot) => snapshot.incidents.length > 0);
-
-    expect(withIncidents).toBeDefined();
-    for (const incident of withIncidents?.incidents ?? []) {
-      expect(incident.zoneId).toMatch(/^zone-\d+$/);
-      expect(["low", "medium", "high"]).toContain(incident.severity);
-    }
+describe("entityId", () => {
+  it("builds a 1-based sequential id from a prefix and index", () => {
+    expect(entityId("zone", 0)).toBe("zone-1");
+    expect(entityId("gate", 4)).toBe("gate-5");
   });
 });
 
@@ -126,6 +101,26 @@ describe("deriveMetrics", () => {
     expect(["normal", "elevated", "critical"]).toContain(metrics.status);
     expect(snapshot.zones).toContainEqual(metrics.busiestZone);
     expect(snapshot.gates).toContainEqual(metrics.longestWaitGate);
+  });
+
+  it("reports 0% occupancy when total capacity is zero", () => {
+    const snapshot: StadiumSnapshot = {
+      venue: "Empty",
+      generatedAt: 0,
+      zones: [{ id: "z", name: "Zone Z", capacity: 0, occupancy: 0 }],
+      gates: [
+        {
+          id: "g",
+          name: "Gate G",
+          isOpen: true,
+          throughputPerMin: 0,
+          waitMinutes: 0,
+        },
+      ],
+      incidents: [],
+    };
+
+    expect(deriveMetrics(snapshot).occupancyPct).toBe(0);
   });
 });
 
